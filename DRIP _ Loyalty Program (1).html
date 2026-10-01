@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DRIP | Loyalty Program</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#0b1f4d;--sky:#7ec8f2;--pink:#fbd3e0;--card:#ffffff;--text:#0b1f4d;--muted:#5b6b8f;--bg:#fdeef3;--box-sizing:border-box;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1f4d;--card:#14306e;--text:#fff;--muted:#b9c8ee}}
+:root[data-theme="dark"]{--bg:#0b1f4d;--card:#14306e;--text:#fff;--muted:#b9c8ee}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Cairo',Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;
+background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60'%3E%3Cpath d='M0 30 Q15 5 30 30 T60 30 T90 30 T120 30' fill='none' stroke='%237ec8f2' stroke-opacity='.25' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E")}
+.hero{background:var(--navy);color:#fff;text-align:center;padding:34px 20px 60px;border-radius:0 0 40px 40px}
+.logo{font-weight:900;font-size:46px;letter-spacing:6px;color:var(--sky)}
+.tag{color:var(--pink);font-weight:700;margin-top:4px;direction:ltr}
+.wrap{max-width:460px;margin:-40px auto 40px;padding:0 16px}
+.card{background:var(--card);border-radius:26px;padding:22px;box-shadow:0 14px 34px rgba(11,31,77,.18);margin-bottom:16px}
+h2{margin:0 0 6px;font-size:21px}
+p{margin:4px 0;color:var(--muted);font-size:14px}
+input{width:100%;padding:14px;border-radius:16px;border:2px solid var(--sky);font:inherit;font-size:17px;text-align:center;direction:ltr;margin:10px 0;background:transparent;color:var(--text)}
+button{width:100%;padding:14px;border:0;border-radius:16px;background:var(--navy);color:#fff;font:inherit;font-weight:700;font-size:16px;cursor:pointer}
+button.alt{background:var(--sky);color:var(--navy)}
+button:disabled{opacity:.4}
+.hidden{display:none}
+.stamps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+.stamp{aspect-ratio:1;border-radius:50%;border:3px dashed var(--sky);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:var(--sky)}
+.stamp.on{background:var(--navy);border:3px solid var(--navy);color:#fff;animation:pop .5s}
+.stamp.gift{border-color:var(--pink);color:#e0679a}
+.stamp.gift.on{background:#e0679a;border-color:#e0679a;color:#fff}
+@keyframes pop{0%{transform:scale(.3)}70%{transform:scale(1.18)}100%{transform:scale(1)}}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.pts{font-size:34px;font-weight:900;color:var(--sky)}
+.msg{background:var(--pink);color:var(--navy);border-radius:16px;padding:12px;text-align:center;font-weight:700;margin-bottom:14px}
+.reward{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid rgba(126,200,242,.4)}
+.reward button{width:auto;padding:8px 16px;font-size:14px}
+#qr{display:block;margin:12px auto;background:#fff;padding:10px;border-radius:16px}
+.code{text-align:center;font-weight:900;letter-spacing:3px;direction:ltr;font-size:20px}
+.link{background:none;color:var(--muted);font-size:13px;text-decoration:underline;margin-top:8px}
+small{display:block;text-align:center;color:var(--muted);margin-top:10px}
+</style>
+</head>
+<body>
+<div class="hero"><div class="logo">DRIP</div><div class="tag">No Sleep. Just Drip.</div></div>
+<div class="wrap">
+
+<div id="main">
+<div id="welcome" class="msg"></div>
+<div class="card">
+<div class="row"><h2>Stamp Card</h2><span id="cnt" style="font-weight:900"></span></div>
+<p>Collect 8 stamps and get a free drink 🎁</p>
+<div class="stamps" id="stamps"></div>
+<button id="free" class="alt hidden">Claim your free drink 🎉</button>
+</div>
+
+<small>Scan the QR at the cashier with every order and your stamp is added automatically</small>
+</div>
+</div>
+
+<script>
+(function(){
+var S={get:function(k){try{return localStorage.getItem(k)}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+function hash(s){var h=5381;for(var i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))>>>0;return h.toString(16).padStart(8,'0')}
+var fp=hash([navigator.platform||'',navigator.userAgent,screen.width+'x'+screen.height,screen.colorDepth,navigator.language,new Date().getTimezoneOffset()].join('|'));
+var db;try{db=JSON.parse(S.get('drip_db')||'null')}catch(e){db=null}
+function save(){S.set('drip_db',JSON.stringify(db))}
+var $=function(i){return document.getElementById(i)};
+function draw(){
+ var h='';for(var i=1;i<=8;i++){var on=i<=db.stamps,g=i===8;
+  h+='<div class="stamp'+(g?' gift':'')+(on?' on':'')+'">'+(g?'🎁':(on?'✓':i))+'</div>'}
+ $('stamps').innerHTML=h;$('cnt').textContent=db.stamps+' / 8';
+ $('free').classList.toggle('hidden',db.stamps<8);
+}
+function show(m){$('main').classList.remove('hidden');$('welcome').textContent=m;draw()}
+function visit(first){
+ var today=new Date().toDateString();
+ if(db.stamps>=8){show('Your card is full! Claim your free drink 🎁');return}
+ if(db.last!==today){db.stamps++;db.last=today;save();
+  show(first?'Welcome! Stamp #1 was added automatically 🎉':'Welcome back! Stamp #'+db.stamps+' added'+(db.stamps===8?' 🎁 Your free drink is ready!':''))}
+ else show('Welcome back! You already got your stamp today ☕')
+}
+if(db&&db.id){visit(false)}else{
+ db={id:'u_'+hash(fp+Date.now()+Math.random()),fp:fp,stamps:0,last:''};
+ visit(true)
+}
+$('free').onclick=function(){
+ if(confirm('Confirm claiming your free drink?')){db.stamps=0;db.last='';save();draw();$('welcome').textContent='Enjoy! Your free drink is ready 🎁 Your card has restarted'}
+};
+})();
+</script>
+</body>
+</html>
